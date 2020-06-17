@@ -2,7 +2,7 @@
 
 Busca as imagens de um site por assunto.
 
-Primeiro, execute sem parâmetros,isso trará uma lista de tópicos:
+Primeiro, execute sem parâmetros, isso trará uma lista de tópicos:
 >```getImage```
 
 * Editorial
@@ -30,7 +30,7 @@ Primeiro, execute sem parâmetros,isso trará uma lista de tópicos:
 * History
 * View all
 
-Em seguida, escolha um tópico e digite: 
-```getImage -topic=<tópico-escolhido>. Exemplo: getImage -topic=wallpapers```
+Em seguida, escolha um tópico e digite:
+>```getImage -topic=<tópico-escolhido>. Exemplo: getImage -topic=wallpapers```
 
 O programa buscará as 20 primeiras imagens do tópico e as salvará numa pasta **/downloads/<tópico-escolhido>**. No exemplo acima, seria **/downloads/wallpapers**.
