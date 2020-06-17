@@ -3,85 +3,46 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io"
 	"log"
-	"net/http"
-	"os"
+	"regexp"
+	"strings"
 
-	"github.com/gocolly/colly"
+	"github.com/alexsetta/scrapper"
 )
 
-type Registry struct {
-	URL string
-}
-
 const (
-	urlBase    = "https://unsplash.com/t/"
-	classPhoto = "._1hjZT._1jjdS._1CBrG._1WPby.xLon9.Onk5k._17avz._1B083._3d86A._22Rl1"
-	classTopic = ".qvEaq._1CBrG"
+	urlBase = "https://unsplash.com/t/"
+)
+
+var (
+	rePhoto = regexp.MustCompile(`<a class=\"_1hjZT _1jjdS _1CBrG _1WPby xLon9 Onk5k _17avz _1B083 _3d86A _22Rl1\" title=\"Download photo\" href=\"(.*?)\"`)
+	reTopic = regexp.MustCompile(`<span class="_1WMnM xLon9">(.*?)<`)
 )
 
 func main() {
+	search := reTopic
 	dirBase := "./downloads/"
-	_, err := os.Stat(dirBase)
-	if err != nil && !os.IsExist(err) {
-		if err := os.Mkdir(dirBase, 0744); err != nil && err != os.ErrExist {
-			log.Fatal(err)
-		}
-	}
-
-	search := classPhoto
+	scrapper.MakeDir(dirBase)
 	topic := flag.String("topic", "", "topic for search")
 	flag.Parse()
-	if *topic == "" {
-		search = classTopic
+	if *topic != "" {
+		search = rePhoto
+		scrapper.MakeDir(dirBase + *topic)
 	}
 
-	registries := []Registry{}
-	c := colly.NewCollector()
-
-	c.OnRequest(func(r *colly.Request) {
-		fmt.Println("Visiting", r.URL)
-	})
-
-	c.OnHTML(search, func(e *colly.HTMLElement) {
-		reg := Registry{}
-		reg.URL = e.Attr("href")
-		registries = append(registries, reg)
-	})
-
-	c.OnScraped(func(r *colly.Response) {
-		if *topic == "" {
-			fmt.Println("Topics found")
-			for _, r := range registries {
-				if len(r.URL) > 3 {
-					fmt.Println("   ", r.URL[3:])
-				}
-			}
-			os.Exit(0)
-		}
-
-		for _, r := range registries {
-			fmt.Println(r.URL)
-		}
-	})
-
-	c.Visit(urlBase + *topic)
-}
-
-func download(path, file string) error {
-	res, err := http.Get(path)
+	fmt.Println("Acessando site de imagens")
+	links, err := scrapper.List(search, urlBase+*topic)
 	if err != nil {
-		return fmt.Errorf("download: %w", err)
+		log.Fatal(err)
 	}
-	defer res.Body.Close()
-	f, err := os.Create(file)
-	if err != nil {
-		return fmt.Errorf("download: %w", err)
+
+	for _, l := range links {
+		if *topic != "" {
+			fileName := strings.Split(l.Value, "/")[4]
+			fmt.Println("baixando ", dirBase+*topic+"/"+fileName+".jpg")
+			scrapper.Download(l.Value, dirBase+*topic+"/"+fileName+".jpg")
+		} else {
+			fmt.Println(l.Value)
+		}
 	}
-	defer f.Close()
-	if _, err := io.Copy(f, res.Body); err != nil {
-		return fmt.Errorf("download: %w", err)
-	}
-	return nil
 }
